@@ -1,0 +1,8 @@
+docker rm -f $(docker ps -a | grep openvpn | awk '{print $1}'); docker build -t openvpn .
+docker exec -it $(docker ps -a | grep openvpn | awk '{print $1}') bash
+docker logs -f $(docker ps -a | grep openvpn | awk '{print $1}')
+docker images | grep "^<none>" | awk '{print $3}' | xargs docker rmi -f; docker rmi -f openvpn
+docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker rm -f; CID=$(docker run -d --privileged -p 1194:1194/udp -p 443:443/tcp openvpn) && docker run -t -i -p 8080:8080 --volumes-from $CID openvpn serveconfig
+
+docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker rm -f; CID=$(docker run -d --privileged -p 1194:1194/udp -p 443:443/tcp -p 8080:8080/tcp openvpn)
+socat -d -d OPENSSL-LISTEN:8080,fork,reuseaddr,key=/etc/openvpn/key.pem,certificate=/etc/openvpn/cert.pem,verify=0 EXEC:'cat /etc/openvpn/client.http'
